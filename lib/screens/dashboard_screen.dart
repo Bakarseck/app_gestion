@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_gestion/theme/colors.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -6,10 +7,10 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: const Text('Tableau de Bord'),
-        backgroundColor: const Color(0xFF00A651),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -24,7 +25,7 @@ class DashboardPage extends StatelessWidget {
                     'Facture Actuelle',
                     '45,250 FCFA',
                     Icons.receipt,
-                    const Color(0xFF00A651),
+                    kSenelecBlue,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -33,7 +34,7 @@ class DashboardPage extends StatelessWidget {
                     'Consommation',
                     '324 kWh',
                     Icons.flash_on,
-                    const Color(0xFF1976D2),
+                    kSenelecViolet,
                   ),
                 ),
               ],
@@ -47,7 +48,7 @@ class DashboardPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
+                color: kSenelecBlue,
               ),
             ),
             const SizedBox(height: 16),
@@ -56,31 +57,25 @@ class DashboardPage extends StatelessWidget {
               Icons.receipt_long,
               'Mes Factures',
               'Consultez l\'historique de vos factures',
-              const Color(0xFF00A651),
+              kSenelecBlue,
             ),
             _buildDashboardOption(
               Icons.show_chart,
               'Consommation Détaillée',
               'Analysez votre consommation énergétique',
-              const Color(0xFF1976D2),
-            ),
-            _buildDashboardOption(
-              Icons.payment,
-              'Historique des Paiements',
-              'Suivez tous vos paiements effectués',
-              const Color(0xFFFF8F00),
+              kSenelecViolet,
             ),
             _buildDashboardOption(
               Icons.notifications,
               'Notifications',
               'Gérez vos alertes et notifications',
-              const Color(0xFF7B1FA2),
+              kSenelecPink,
             ),
             _buildDashboardOption(
               Icons.settings,
               'Paramètres du Compte',
               'Configurez vos préférences',
-              const Color(0xFF455A64),
+              kSenelecYellow,
             ),
           ],
         ),

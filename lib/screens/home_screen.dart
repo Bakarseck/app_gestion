@@ -1,6 +1,7 @@
 import 'package:app_gestion/screens/dashboard_screen.dart';
 import 'package:app_gestion/screens/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:app_gestion/theme/colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,46 +9,56 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
               child: Container(
-                width: 32,
-                height: 32,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(
-                  Icons.flash_on,
-                  color: Color(0xFF00A651),
-                  size: 20,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 38,
+                  height: 38,
+                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'SENELEC',
-              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
             ),
           ],
         ),
         actions: [
           PopupMenuButton<String>(
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+                border: Border.all(
+                  color: kSenelecBlue.withOpacity(0.2),
+                  width: 1.5,
+                ),
               ),
-              child: const Icon(Icons.login, color: Colors.white),
+              child: Center(
+                child: Icon(
+                  Icons.account_circle,
+                  color: kSenelecBlue,
+                  size: 28,
+                ),
+              ),
             ),
             onSelected: (value) {
               if (value == 'admin') {
@@ -68,24 +79,21 @@ class HomePage extends StatelessWidget {
             },
             itemBuilder:
                 (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'admin',
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.admin_panel_settings,
-                          color: Color(0xFF00A651),
-                        ),
+                        Icon(Icons.admin_panel_settings, color: kSenelecBlue),
                         SizedBox(width: 8),
                         Text('Administrateur'),
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'technicien',
                     child: Row(
                       children: [
-                        Icon(Icons.engineering, color: Color(0xFF00A651)),
+                        Icon(Icons.engineering, color: kSenelecBlue),
                         SizedBox(width: 8),
                         Text('Technicien'),
                       ],
@@ -105,7 +113,7 @@ class HomePage extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF00A651), Color(0xFF4CAF50)],
+                  colors: [kSenelecBlue, kSenelecViolet],
                 ),
               ),
               child: SafeArea(
@@ -120,19 +128,22 @@ class HomePage extends StatelessWidget {
                         height: 70,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(35),
+                          shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withOpacity(0.10),
                               blurRadius: 8,
-                              offset: const Offset(0, 2),
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 35,
-                          color: Color(0xFF00A651),
+                        child: Center(
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 38,
+                            height: 38,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -153,6 +164,8 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: 50),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -164,19 +177,18 @@ class HomePage extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const DashboardPage()),
                     );
                   }),
-                  _buildDrawerItem(Icons.receipt_long, 'Mes factures', null),
                   _buildDrawerItem(Icons.show_chart, 'Consommation', null),
-                  _buildDrawerItem(Icons.payment, 'Paiements', null),
                   _buildDrawerItem(Icons.history, 'Historique', null),
                   const Divider(height: 32),
                   _buildDrawerItem(Icons.settings, 'Paramètres', null),
                   _buildDrawerItem(Icons.help_outline, 'Aide & Support', null),
                   const Divider(height: 32),
+                  const SizedBox(height: 100),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Color(0xFFE53935)),
                     title: const Text(
                       'Déconnexion',
-                      style: TextStyle(color: Color(0xFFE53935)),
+                      style: TextStyle(color: kSenelecPink),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -199,7 +211,7 @@ class HomePage extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF00A651), Color(0xFF4CAF50)],
+                  colors: [kSenelecBlue, kSenelecViolet],
                 ),
               ),
               child: SafeArea(
@@ -235,15 +247,13 @@ class HomePage extends StatelessWidget {
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: const Color(
-                                        0xFF00A651,
-                                      ).withOpacity(0.1),
+                                      color: kSenelecBlue.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(24),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.account_circle,
                                       size: 32,
-                                      color: Color(0xFF00A651),
+                                      color: kSenelecBlue,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -263,14 +273,14 @@ class HomePage extends StatelessWidget {
                                           Icon(
                                             Icons.check_circle,
                                             size: 16,
-                                            color: Color(0xFF00A651),
+                                            color: kSenelecBlue,
                                           ),
                                           SizedBox(width: 4),
                                           Text(
                                             'Abonnement Actif',
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: Color(0xFF00A651),
+                                              color: kSenelecBlue,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -313,31 +323,25 @@ class HomePage extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 1.2,
+                    childAspectRatio: 1.0,
                     children: [
                       _buildServiceCard(
                         Icons.add_box_outlined,
                         'Nouvel\nAbonnement',
-                        const Color(0xFF00A651),
+                        kSenelecBlue,
                         'Demandez votre\nraccordement',
                       ),
                       _buildServiceCard(
                         Icons.report_problem_outlined,
                         'Réclamation',
-                        const Color(0xFFE53935),
+                        kSenelecPink,
                         'Signalez un\nproblème',
                       ),
                       _buildServiceCard(
                         Icons.track_changes,
                         'Suivi\nRequêtes',
-                        const Color(0xFF1976D2),
+                        kSenelecViolet,
                         'Suivez vos\ndemandes',
-                      ),
-                      _buildServiceCard(
-                        Icons.payment,
-                        'Paiement\nFacture',
-                        const Color(0xFFFF8F00),
-                        'Payez en\nligne',
                       ),
                     ],
                   ),
@@ -364,14 +368,21 @@ class HomePage extends StatelessWidget {
                             Icons.edit_outlined,
                             'Mettre à jour mes informations',
                             'Modifiez vos données personnelles',
-                            const Color(0xFF7B1FA2),
+                            kSenelecViolet,
                           ),
-                          const Divider(height: 24),
+                          const Divider(height: 24, color: kSenelecYellow),
                           _buildQuickAction(
                             Icons.support_agent,
                             'Contacter le support',
                             'Besoin d\'aide ? Contactez-nous',
-                            const Color(0xFF455A64),
+                            kSenelecPink,
+                          ),
+                          const Divider(height: 24, color: kSenelecOrange),
+                          _buildQuickAction(
+                            Icons.info_outline,
+                            'Infos Senelec',
+                            'Découvrez nos nouveautés',
+                            kSenelecYellow,
                           ),
                         ],
                       ),
@@ -387,8 +398,31 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback? onTap) {
+    Color color;
+    switch (title) {
+      case 'Tableau de bord':
+        color = kSenelecBlue;
+        break;
+      case 'Mes factures':
+        color = kSenelecViolet;
+        break;
+      case 'Consommation':
+        color = kSenelecOrange;
+        break;
+      case 'Historique':
+        color = kSenelecYellow;
+        break;
+      case 'Paramètres':
+        color = kSenelecPink;
+        break;
+      case 'Aide & Support':
+        color = kSenelecViolet;
+        break;
+      default:
+        color = kSenelecBlue;
+    }
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF00A651)),
+      leading: Icon(icon, color: color),
       title: Text(title),
       onTap: onTap,
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
@@ -408,7 +442,7 @@ class HomePage extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
@@ -421,27 +455,27 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 32, color: color),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -508,7 +542,7 @@ class HomePage extends StatelessWidget {
                   // Logique de déconnexion
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE53935),
+                  backgroundColor: kSenelecPink,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Déconnexion'),

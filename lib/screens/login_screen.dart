@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:app_gestion/theme/colors.dart';
 
 class LoginPage extends StatelessWidget {
   final String role;
@@ -8,10 +8,10 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Text('Connexion $role'),
-        backgroundColor: const Color(0xFF00A651),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -26,7 +26,7 @@ class LoginPage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00A651).withOpacity(0.1),
+                        color: kSenelecBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(32),
                       ),
                       child: Icon(
@@ -34,7 +34,7 @@ class LoginPage extends StatelessWidget {
                             ? Icons.admin_panel_settings
                             : Icons.engineering,
                         size: 64,
-                        color: const Color(0xFF00A651),
+                        color: kSenelecBlue,
                       ),
                     ),
                     const SizedBox(height: 24),

@@ -1,10 +1,78 @@
-import 'package:app_gestion/screens/dashboard_screen.dart';
-import 'package:app_gestion/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
+import 'package:app_gestion/services/auth_service.dart';
+import 'package:app_gestion/repositories/notifications_repository.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatefulWidget {
+  final VoidCallback onLogout;
+
+  const HomeScreen({super.key, required this.onLogout});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+  String? _error;
+  int _notificationCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+    _loadNotificationCount();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final result = await AuthService.getProfile();
+      if (mounted) {
+        setState(() {
+          if (result['success'] == true) {
+            _userProfile = result['user'];
+            _error = null;
+          } else {
+            _error = result['message'];
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Erreur lors du chargement du profil: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final notifications = await NotificationsRepository.getNotifications();
+      if (mounted) {
+        setState(() {
+          _notificationCount = NotificationsRepository.getUnreadCount(
+            notifications,
+          );
+        });
+      }
+    } catch (e) {
+      // En cas d'erreur, on garde le compteur à 0
+      print('Erreur lors du chargement des notifications: $e');
+    }
+  }
+
+  String _getFullName() {
+    if (_userProfile == null) return 'Utilisateur';
+    final prenom = _userProfile!['prenom'] ?? '';
+    final nom = _userProfile!['nom'] ?? '';
+    return '$prenom $nom'.trim().isEmpty
+        ? 'Utilisateur'
+        : '$prenom $nom'.trim();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,77 +101,86 @@ class HomePage extends StatelessWidget {
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            icon: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(
-                  color: kSenelecBlue.withOpacity(0.2),
-                  width: 1.5,
-                ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/notifications',
+                  );
+                  // Rafraîchir le compteur de notifications après retour
+                  if (result == true) {
+                    _loadNotificationCount();
+                  }
+                },
               ),
-              child: Center(
-                child: Icon(
-                  Icons.account_circle,
-                  color: kSenelecBlue,
-                  size: 28,
-                ),
-              ),
-            ),
-            onSelected: (value) {
-              if (value == 'admin') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LoginPage(role: 'Administrateur'),
-                  ),
-                );
-              } else if (value == 'technicien') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LoginPage(role: 'Technicien'),
-                  ),
-                );
-              }
-            },
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'admin',
-                    child: Row(
-                      children: [
-                        Icon(Icons.admin_panel_settings, color: kSenelecBlue),
-                        SizedBox(width: 8),
-                        Text('Administrateur'),
-                      ],
+              if (_notificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      _notificationCount > 99
+                          ? '99+'
+                          : _notificationCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                  PopupMenuItem(
-                    value: 'technicien',
-                    child: Row(
-                      children: [
-                        Icon(Icons.engineering, color: kSenelecBlue),
-                        SizedBox(width: 8),
-                        Text('Technicien'),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
+            ],
           ),
-          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Déconnexion'),
+                    content: const Text(
+                      'Êtes-vous sûr de vouloir vous déconnecter ?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Annuler'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          widget.onLogout();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Déconnexion'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
+
       drawer: Drawer(
         child: Column(
           children: [
@@ -147,9 +224,9 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Bakar SECK',
-                        style: TextStyle(
+                      Text(
+                        _isLoading ? 'Chargement...' : _getFullName(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -172,16 +249,24 @@ class HomePage extends StatelessWidget {
                 children: [
                   _buildDrawerItem(Icons.dashboard, 'Tableau de bord', () {
                     Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DashboardPage()),
-                    );
                   }),
-                  _buildDrawerItem(Icons.show_chart, 'Consommation', null),
-                  _buildDrawerItem(Icons.history, 'Historique', null),
+                  _buildDrawerItem(Icons.subscriptions, 'Abonnements', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/abonnements');
+                  }),
+                  _buildDrawerItem(Icons.report_problem, 'Réclamations', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/reclamations');
+                  }),
                   const Divider(height: 32),
-                  _buildDrawerItem(Icons.settings, 'Paramètres', null),
-                  _buildDrawerItem(Icons.help_outline, 'Aide & Support', null),
+                  _buildDrawerItem(Icons.settings, 'Paramètres', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/parametres');
+                  }),
+                  _buildDrawerItem(Icons.help_outline, 'Aide & Support', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/aide-support');
+                  }),
                   const Divider(height: 32),
                   const SizedBox(height: 100),
                   ListTile(
@@ -192,7 +277,34 @@ class HomePage extends StatelessWidget {
                     ),
                     onTap: () {
                       Navigator.pop(context);
-                      _showLogoutDialog(context);
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Déconnexion'),
+                            content: const Text(
+                              'Êtes-vous sûr de vouloir vous déconnecter ?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Annuler'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  widget.onLogout();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Déconnexion'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     },
                   ),
                 ],
@@ -201,195 +313,368 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Hero Section
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [kSenelecBlue, kSenelecViolet],
-                ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bienvenue chez SENELEC',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Votre partenaire énergétique de confiance',
-                        style: TextStyle(color: Colors.white70, fontSize: 16),
-                      ),
-                      const SizedBox(height: 24),
-                      Card(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: kSenelecBlue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: Icon(
-                                      Icons.account_circle,
-                                      size: 32,
-                                      color: kSenelecBlue,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Bakar SECK',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.check_circle,
-                                            size: 16,
-                                            color: kSenelecBlue,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Abonnement Actif',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: kSenelecBlue,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
-            // Services Section
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Nos Services',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
+      body:
+          _isLoading
+              ? const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(kSenelecBlue),
+                ),
+              )
+              : _error != null
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey.shade400,
                     ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Service Cards Grid
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.0,
-                    children: [
-                      _buildServiceCard(
-                        Icons.add_box_outlined,
-                        'Nouvel\nAbonnement',
-                        kSenelecBlue,
-                        'Demandez votre\nraccordement',
+                    const SizedBox(height: 16),
+                    Text(
+                      'Erreur de chargement',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
                       ),
-                      _buildServiceCard(
-                        Icons.report_problem_outlined,
-                        'Réclamation',
-                        kSenelecPink,
-                        'Signalez un\nproblème',
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadUserProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kSenelecBlue,
+                        foregroundColor: Colors.white,
                       ),
-                      _buildServiceCard(
-                        Icons.track_changes,
-                        'Suivi\nRequêtes',
-                        kSenelecViolet,
-                        'Suivez vos\ndemandes',
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Quick Actions
-                  Card(
-                    child: Padding(
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // En-tête avec nom d'utilisateur
+                    Container(
                       padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      decoration: BoxDecoration(
+                        color: kSenelecBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
                         children: [
-                          const Text(
-                            'Actions Rapides',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2C3E50),
+                          CircleAvatar(
+                            backgroundColor: kSenelecBlue,
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          _buildQuickAction(
-                            Icons.edit_outlined,
-                            'Mettre à jour mes informations',
-                            'Modifiez vos données personnelles',
-                            kSenelecViolet,
-                          ),
-                          const Divider(height: 24, color: kSenelecYellow),
-                          _buildQuickAction(
-                            Icons.support_agent,
-                            'Contacter le support',
-                            'Besoin d\'aide ? Contactez-nous',
-                            kSenelecPink,
-                          ),
-                          const Divider(height: 24, color: kSenelecOrange),
-                          _buildQuickAction(
-                            Icons.info_outline,
-                            'Infos Senelec',
-                            'Découvrez nos nouveautés',
-                            kSenelecYellow,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bienvenue, ${_getFullName()} !',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: kSenelecBlue,
+                                  ),
+                                ),
+                                const Text(
+                                  'Gérez vos abonnements et réclamations',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 24),
+
+                    // Section Abonnements
+                    const Text(
+                      'Mes Abonnements',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: kSenelecBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Abonnement en cours
+                    _buildAbonnementCard(
+                      'Abonnement en cours',
+                      'Demande soumise le 15/06/2024',
+                      'En attente de validation',
+                      Icons.pending,
+                      Colors.orange,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Abonnement validé
+                    _buildAbonnementCard(
+                      'Abonnement validé',
+                      'Validé le 20/06/2024',
+                      'Actif',
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section Réclamations
+                    const Text(
+                      'Mes Réclamations',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: kSenelecBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Réclamation en cours de validation
+                    _buildReclamationCard(
+                      'Réclamation #001',
+                      'Coupure de courant',
+                      'En cours de validation',
+                      'Soumise le 25/06/2024',
+                      Icons.hourglass_empty,
+                      Colors.orange,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Réclamation chez le technicien
+                    _buildReclamationCard(
+                      'Réclamation #002',
+                      'Problème de compteur',
+                      'Chez le technicien',
+                      'Assignée le 26/06/2024',
+                      Icons.engineering,
+                      Colors.blue,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Réclamation résolue
+                    _buildReclamationCard(
+                      'Réclamation #003',
+                      'Facture incorrecte',
+                      'Résolu',
+                      'Résolu le 27/06/2024',
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Boutons d'action
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/nouvel-abonnement',
+                              );
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Nouvel Abonnement'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kSenelecBlue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/nouvelle-reclamation',
+                              );
+                            },
+                            icon: const Icon(Icons.report_problem),
+                            label: const Text('Nouvelle Réclamation'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kSenelecViolet,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+    );
+  }
+
+  Widget _buildAbonnementCard(
+    String title,
+    String subtitle,
+    String status,
+    IconData icon,
+    Color color,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                 ],
               ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                status,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReclamationCard(
+    String title,
+    String description,
+    String status,
+    String date,
+    IconData icon,
+    Color color,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              date,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
         ),
@@ -426,129 +711,6 @@ class HomePage extends StatelessWidget {
       title: Text(title),
       onTap: onTap,
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-    );
-  }
-
-  Widget _buildServiceCard(
-    IconData icon,
-    String title,
-    Color color,
-    String subtitle,
-  ) {
-    return Card(
-      child: InkWell(
-        onTap: () {
-          // Ajoutez la logique de navigation ici
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 32, color: color),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickAction(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color color,
-  ) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: Colors.grey, fontSize: 14),
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () {
-        // Ajoutez la logique ici
-      },
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.logout, color: Color(0xFFE53935)),
-                SizedBox(width: 8),
-                Text('Déconnexion'),
-              ],
-            ),
-            content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Logique de déconnexion
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kSenelecPink,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Déconnexion'),
-              ),
-            ],
-          ),
     );
   }
 }

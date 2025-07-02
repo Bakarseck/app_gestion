@@ -3,8 +3,8 @@ class ApiConfig {
   static const String baseUrl = 'https://backend.vision-optique.com/api';
 
   // Timeouts
-  static const int connectionTimeout = 30; // secondes
-  static const int receiveTimeout = 30; // secondes
+  static const int connectionTimeout = 30;
+  static const int receiveTimeout = 30;
 
   // Headers par défaut
   static const Map<String, String> defaultHeaders = {

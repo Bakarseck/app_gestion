@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
 import 'package:app_gestion/repositories/demandes_repository.dart';
 import 'package:app_gestion/models/demande.dart';
+import 'package:app_gestion/services/api_service.dart';
 
 class AbonnementsScreen extends StatefulWidget {
   const AbonnementsScreen({super.key});
@@ -28,10 +29,19 @@ class _AbonnementsScreenState extends State<AbonnementsScreen> {
     });
 
     try {
-      final demandes = await DemandesRepository.getDemandes();
-      if (mounted) {
+      final result = await ApiService.getDemandes();
+      if (result['success'] == true) {
+        final List<dynamic> demandesData = result['demandes'] ?? [];
         setState(() {
-          _demandes = demandes;
+          _demandes =
+              demandesData.map((json) => Demande.fromJson(json)).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error =
+              result['message'] ??
+              'Erreur lors de la récupération des abonnements';
           _isLoading = false;
         });
       }

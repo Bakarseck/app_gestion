@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
 import 'package:app_gestion/repositories/reclamations_repository.dart';
+import 'package:app_gestion/services/api_service.dart'; // Added import for ApiService
 
 class NouvelleReclamationScreen extends StatefulWidget {
   const NouvelleReclamationScreen({super.key});
@@ -53,10 +54,11 @@ Adresse: ${_adresseController.text}
 Description: ${_descriptionController.text}
       '''.trim();
 
-      await ReclamationsRepository.createReclamation(
-        objet: _objetController.text,
-        description: description,
-      );
+      await ApiService.creerReclamation({
+        'objet': _objetController.text,
+        'description': description,
+        // 'categorie': _selectedCategorie, // à ajouter si le backend le gère
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

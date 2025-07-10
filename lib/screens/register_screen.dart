@@ -66,6 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
+      
       final result = await AuthService.register(
         _nomController.text.trim(),
         _prenomController.text.trim(),

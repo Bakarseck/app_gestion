@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
 import 'package:app_gestion/repositories/reclamations_repository.dart';
 import 'package:app_gestion/models/reclamation.dart';
+import 'package:app_gestion/services/api_service.dart';
 
 class ReclamationsScreen extends StatefulWidget {
   const ReclamationsScreen({super.key});
@@ -28,10 +29,21 @@ class _ReclamationsScreenState extends State<ReclamationsScreen> {
     });
 
     try {
-      final reclamations = await ReclamationsRepository.getReclamations();
-      if (mounted) {
+      final result = await ApiService.getReclamations();
+      if (result['success'] == true) {
+        final List<dynamic> reclamationsData = result['reclamations'] ?? [];
         setState(() {
-          _reclamations = reclamations;
+          _reclamations =
+              reclamationsData
+                  .map((json) => Reclamation.fromJson(json))
+                  .toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error =
+              result['message'] ??
+              'Erreur lors de la récupération des réclamations';
           _isLoading = false;
         });
       }

@@ -159,4 +159,53 @@ class ApiService {
       return {'success': false, 'message': 'Erreur de modification: $e'};
     }
   }
+
+  // === DEMANDES ===
+  static Future<Map<String, dynamic>> creerDemande(
+    Map<String, dynamic> data,
+  ) async {
+    // POST vers l'endpoint 'demandes'
+    return await post('demandes', data);
+  }
+
+  static Future<Map<String, dynamic>> getDemandes() async {
+    // GET vers l'endpoint 'demandes'
+    final result = await get('demandes');
+
+    // Si le backend renvoie directement un tableau
+    if (result is List) {
+      return {'success': true, 'demandes': result};
+    }
+
+    // Si la réponse contient 'data' au lieu de 'demandes', on l'adapte
+    if (result['success'] == true &&
+        result['data'] != null &&
+        result['demandes'] == null) {
+      result['demandes'] = result['data'];
+    }
+
+    return result;
+  }
+
+  // === NOTIFICATIONS ===
+  static Future<Map<String, dynamic>> getNotifications() async {
+    // GET vers l'endpoint 'notifications'
+    return await get('notifications');
+  }
+
+  static Future<Map<String, dynamic>> marquerNotificationLue(int id) async {
+    // PUT vers l'endpoint 'notifications/{id}/read'
+    return await put('notifications/ id /read', {});
+  }
+
+  // === RECLAMATIONS ===
+  static Future<Map<String, dynamic>> creerReclamation(
+    Map<String, dynamic> data,
+  ) async {
+    return await post('claims', data);
+  }
+
+  static Future<Map<String, dynamic>> getReclamations() async {
+    return await get('claims');
+  }
 }

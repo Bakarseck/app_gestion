@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
 import 'package:app_gestion/services/auth_service.dart';
 import 'package:app_gestion/repositories/notifications_repository.dart';
+import 'package:app_gestion/services/api_service.dart';
+import 'package:app_gestion/models/demande.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -17,12 +19,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _error;
   int _notificationCount = 0;
+  List<Demande> _demandesAcceptees = [];
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
     _loadNotificationCount();
+    _loadDemandesAcceptees();
   }
 
   Future<void> _loadUserProfile() async {
@@ -65,6 +69,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadDemandesAcceptees() async {
+    try {
+      final result = await ApiService.getDemandes();
+      if (result['success'] == true) {
+        final List<dynamic> demandesData = result['demandes'] ?? [];
+        final allDemandes =
+            demandesData.map((json) => Demande.fromJson(json)).toList();
+
+        // Filtrer seulement les demandes avec des statuts acceptés
+        final demandesAcceptees =
+            allDemandes.where((demande) {
+              final statut = demande.statut.toLowerCase();
+              return statut == 'validé' ||
+                  statut == 'accepté' ||
+                  statut == 'actif';
+            }).toList();
+
+        if (mounted) {
+          setState(() {
+            _demandesAcceptees = demandesAcceptees;
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des demandes acceptées: $e');
+    }
+  }
+
   String _getFullName() {
     if (_userProfile == null) return 'Utilisateur';
     final prenom = _userProfile!['prenom'] ?? '';
@@ -72,6 +104,40 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$prenom $nom'.trim().isEmpty
         ? 'Utilisateur'
         : '$prenom $nom'.trim();
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'validé':
+      case 'accepté':
+      case 'actif':
+        return Colors.green;
+      case 'ouvert':
+        return Colors.orange;
+      case 'rejeté':
+        return Colors.red;
+      case 'en cours':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'validé':
+      case 'accepté':
+      case 'actif':
+        return Icons.check_circle;
+      case 'ouvert':
+        return Icons.pending;
+      case 'rejeté':
+        return Icons.cancel;
+      case 'en cours':
+        return Icons.engineering;
+      default:
+        return Icons.info;
+    }
   }
 
   @override
@@ -254,6 +320,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/abonnements');
                   }),
+                  _buildDrawerItem(Icons.list_alt, 'Toutes mes demandes', () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/toutes-demandes');
+                  }),
                   _buildDrawerItem(Icons.report_problem, 'Réclamations', () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/reclamations');
@@ -419,25 +489,48 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Abonnement en cours
-                    _buildAbonnementCard(
-                      'Abonnement en cours',
-                      'Demande soumise le 15/06/2024',
-                      'En attente de validation',
-                      Icons.pending,
-                      Colors.orange,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Abonnement validé
-                    _buildAbonnementCard(
-                      'Abonnement validé',
-                      'Validé le 20/06/2024',
-                      'Actif',
-                      Icons.check_circle,
-                      Colors.green,
-                    ),
+                    // Affichage des vraies demandes acceptées
+                    if (_demandesAcceptees.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.subscriptions_outlined,
+                              color: Colors.grey.shade400,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Aucun abonnement actif',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ..._demandesAcceptees.map((demande) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildAbonnementCard(
+                            'Demande #${demande.id}',
+                            '${demande.typeDisplay} - ${demande.dateSoumission.day}/${demande.dateSoumission.month}/${demande.dateSoumission.year}',
+                            demande.statutDisplay,
+                            _getStatusIcon(demande.statut),
+                            _getStatusColor(demande.statut),
+                          ),
+                        );
+                      }).toList(),
 
                     const SizedBox(height: 24),
 

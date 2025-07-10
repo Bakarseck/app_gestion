@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:app_gestion/theme/colors.dart';
 import 'package:app_gestion/repositories/demandes_repository.dart';
+import 'package:app_gestion/services/api_service.dart'; // Added import for ApiService
 
 class NouvelAbonnementScreen extends StatefulWidget {
   const NouvelAbonnementScreen({super.key});
@@ -58,10 +59,11 @@ Puissance: ${_puissanceController.text}
 Description: ${_descriptionController.text}
       '''.trim();
 
-      await DemandesRepository.createDemande(
-        type: _selectedType,
-        description: description,
-      );
+      await ApiService.creerDemande({
+        'type': _selectedType,
+        'description': description,
+        // 'piecesJointes': ... // à ajouter si besoin
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -7,9 +7,12 @@ import 'package:app_gestion/screens/nouvel_abonnement_screen.dart';
 import 'package:app_gestion/screens/nouvelle_reclamation_screen.dart';
 import 'package:app_gestion/screens/aide_support_screen.dart';
 import 'package:app_gestion/screens/parametres_screen.dart';
+import 'package:app_gestion/screens/toutes_demandes_screen.dart';
+import 'package:app_gestion/screens/demande_details_screen.dart';
 import 'package:app_gestion/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'theme/colors.dart';
+import 'models/demande.dart';
 
 void main() {
   runApp(const MyApp());
@@ -80,6 +83,11 @@ class MyApp extends StatelessWidget {
                 ).pushNamedAndRemoveUntil('/', (route) => false);
               },
             ),
+        '/toutes-demandes': (context) => const ToutesDemandesScreen(),
+        '/demande-details': (context) {
+          final demande = ModalRoute.of(context)!.settings.arguments as Demande;
+          return DemandeDetailsScreen(demande: demande);
+        },
       },
     );
   }

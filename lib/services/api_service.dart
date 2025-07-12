@@ -206,6 +206,22 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getReclamations() async {
-    return await get('claims');
+    // GET vers l'endpoint 'claims'
+    final result = await get('claims');
+    
+    // Si le backend renvoie directement un tableau
+    if (result is List) {
+      return {
+        'success': true,
+        'reclamations': result,
+      };
+    }
+    
+    // Si la réponse contient 'data' au lieu de 'reclamations', on l'adapte
+    if (result['success'] == true && result['data'] != null && result['reclamations'] == null) {
+      result['reclamations'] = result['data'];
+    }
+    
+    return result;
   }
 }

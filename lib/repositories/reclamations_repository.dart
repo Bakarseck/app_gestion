@@ -4,10 +4,11 @@ import '../services/api_service.dart';
 class ReclamationsRepository {
   static Future<List<Reclamation>> getReclamations() async {
     try {
-      final result = await ApiService.get('reclamations');
+      final result = await ApiService.getReclamations();
 
       if (result['success'] == true) {
-        final List<dynamic> reclamationsData = result['reclamations'] ?? [];
+        final List<dynamic> reclamationsData =
+            result['reclamations'] ?? result['data'] ?? [];
         return reclamationsData
             .map((json) => Reclamation.fromJson(json))
             .toList();
@@ -24,10 +25,10 @@ class ReclamationsRepository {
 
   static Future<Reclamation> getReclamationById(int id) async {
     try {
-      final result = await ApiService.get('reclamations/$id');
+      final result = await ApiService.get('claims/$id');
 
       if (result['success'] == true) {
-        return Reclamation.fromJson(result['reclamation']);
+        return Reclamation.fromJson(result['reclamation'] ?? result['data']);
       } else {
         throw Exception(
           result['message'] ??
@@ -44,13 +45,13 @@ class ReclamationsRepository {
     required String description,
   }) async {
     try {
-      final result = await ApiService.post('reclamations', {
+      final result = await ApiService.post('claims', {
         'objet': objet,
         'description': description,
       });
 
       if (result['success'] == true) {
-        return Reclamation.fromJson(result['reclamation']);
+        return Reclamation.fromJson(result['reclamation'] ?? result['data']);
       } else {
         throw Exception(
           result['message'] ?? 'Erreur lors de la création de la réclamation',
@@ -66,10 +67,10 @@ class ReclamationsRepository {
     Map<String, dynamic> data,
   ) async {
     try {
-      final result = await ApiService.put('reclamations/$id', data);
+      final result = await ApiService.put('claims/$id', data);
 
       if (result['success'] == true) {
-        return Reclamation.fromJson(result['reclamation']);
+        return Reclamation.fromJson(result['reclamation'] ?? result['data']);
       } else {
         throw Exception(
           result['message'] ??
@@ -83,7 +84,7 @@ class ReclamationsRepository {
 
   static Future<void> deleteReclamation(int id) async {
     try {
-      final result = await ApiService.delete('reclamations/$id');
+      final result = await ApiService.delete('claims/$id');
 
       if (result['success'] != true) {
         throw Exception(
@@ -155,5 +156,32 @@ class ReclamationsRepository {
               reclamation.priorite.toLowerCase() == priorite.toLowerCase(),
         )
         .toList();
+  }
+
+  // Méthode pour l'admin dashboard
+  static Future<Map<String, dynamic>> getUserClaims() async {
+    try {
+      final result = await ApiService.getReclamations();
+      print('Résultat getUserClaims: $result');
+
+      if (result['success'] == true) {
+        final reclamations = result['reclamations'] ?? result['data'] ?? [];
+        return {'success': true, 'data': reclamations};
+      } else {
+        return {
+          'success': false,
+          'message':
+              result['message'] ?? 'Erreur lors du chargement des réclamations',
+          'data': [],
+        };
+      }
+    } catch (e) {
+      print('Exception getUserClaims: $e');
+      return {
+        'success': false,
+        'message': 'Erreur lors du chargement des réclamations: $e',
+        'data': [],
+      };
+    }
   }
 }

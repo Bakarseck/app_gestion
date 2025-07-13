@@ -1,5 +1,7 @@
 import 'package:app_gestion/screens/login_screen.dart';
 import 'package:app_gestion/screens/home_screen.dart';
+import 'package:app_gestion/screens/admin_dashboard.dart';
+import 'package:app_gestion/screens/technician_dashboard.dart';
 import 'package:app_gestion/screens/abonnements_screen.dart';
 import 'package:app_gestion/screens/reclamations_screen.dart';
 import 'package:app_gestion/screens/notifications_screen.dart';
@@ -68,6 +70,8 @@ class MyApp extends StatelessWidget {
       ),
       home: const AuthWrapper(),
       routes: {
+        '/admin-dashboard': (context) => const AdminDashboard(),
+        '/technician-dashboard': (context) => const TechnicianDashboard(),
         '/abonnements': (context) => const AbonnementsScreen(),
         '/reclamations': (context) => const ReclamationsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
@@ -160,6 +164,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
     });
   }
 
+  // Méthode pour déterminer le rôle de l'utilisateur
+  String _determineUserRole(Map<String, dynamic> userData) {
+    // Vérifier différents champs possibles pour le rôle
+    final role =
+        userData['role']?.toString().toLowerCase() ??
+        userData['type']?.toString().toLowerCase() ??
+        userData['userType']?.toString().toLowerCase() ??
+        userData['typeUtilisateur']?.toString().toLowerCase() ??
+        'client';
+
+    print('Données utilisateur: $userData');
+    print('Rôle déterminé: $role');
+
+    return role;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -213,10 +233,39 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    // Si l'utilisateur est connecté, afficher le dashboard
+    // Si l'utilisateur est connecté, vérifier le rôle et rediriger
     // Sinon, afficher la page de login
     if (_isLoggedIn) {
-      return HomeScreen(onLogout: _logout);
+      return FutureBuilder<Map<String, dynamic>?>(
+        future: AuthService.getUserData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final userData = snapshot.data;
+          if (userData != null) {
+            final userRole = _determineUserRole(userData);
+
+            print('Redirection vers le dashboard pour le rôle: $userRole');
+
+            if (userRole == 'admin' || userRole == 'administrateur') {
+              return const AdminDashboard();
+            } else if (userRole == 'technicien' || userRole == 'technician') {
+              return const TechnicianDashboard();
+            } else {
+              // Clients
+              return HomeScreen(onLogout: _logout);
+            }
+          } else {
+            // Si pas de données utilisateur, rediriger vers HomeScreen
+            print(
+              'Aucune donnée utilisateur trouvée, redirection vers HomeScreen',
+            );
+            return HomeScreen(onLogout: _logout);
+          }
+        },
+      );
     } else {
       return LoginPage(onLoginSuccess: _onLoginSuccess);
     }

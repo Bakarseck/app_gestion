@@ -74,6 +74,8 @@ class AuthService {
     String password,
   ) async {
     try {
+      print('Tentative de connexion pour: $email');
+
       final response = await http
           .post(
             Uri.parse('${ApiConfig.baseUrl}/${ApiConfig.loginEndpoint}'),
@@ -83,23 +85,30 @@ class AuthService {
           .timeout(Duration(seconds: ApiConfig.connectionTimeout));
 
       final data = json.decode(response.body);
+      print('Réponse de l\'API: $data');
 
       if (response.statusCode == 200 && data['success'] == true) {
         // Sauvegarder les données d'authentification
-        await saveAuthData(data['token'], data['user']);
+        final userData = data['user'] ?? data['utilisateur'] ?? data;
+        print('Données utilisateur à sauvegarder: $userData');
+
+        await saveAuthData(data['token'], userData);
+
         return {
           'success': true,
           'message': data['message'] ?? 'Connexion réussie',
-          'user': data['user'],
+          'user': userData,
           'token': data['token'],
         };
       } else {
+        print('Erreur de connexion: ${data['message']}');
         return {
           'success': false,
           'message': data['message'] ?? 'Erreur de connexion',
         };
       }
     } catch (e) {
+      print('Exception lors de la connexion: $e');
       return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }
@@ -211,5 +220,4 @@ class AuthService {
       };
     }
   }
-
 }

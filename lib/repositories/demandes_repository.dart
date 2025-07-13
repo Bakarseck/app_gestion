@@ -118,4 +118,31 @@ class DemandesRepository {
   static List<Demande> getDemandesRejetees(List<Demande> demandes) {
     return filterByStatus(demandes, 'rejeté');
   }
+
+  // Méthode pour l'admin dashboard
+  static Future<Map<String, dynamic>> getUserDemandes() async {
+    try {
+      final result = await ApiService.getDemandes();
+      print('Résultat getUserDemandes: $result');
+
+      if (result['success'] == true) {
+        final demandes = result['demandes'] ?? result['data'] ?? [];
+        return {'success': true, 'data': demandes};
+      } else {
+        return {
+          'success': false,
+          'message':
+              result['message'] ?? 'Erreur lors du chargement des demandes',
+          'data': [],
+        };
+      }
+    } catch (e) {
+      print('Exception getUserDemandes: $e');
+      return {
+        'success': false,
+        'message': 'Erreur lors du chargement des demandes: $e',
+        'data': [],
+      };
+    }
+  }
 }

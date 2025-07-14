@@ -175,7 +175,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         clientId: 3,
         type: 'reclamation',
         dateSoumission: DateTime.now().subtract(const Duration(hours: 1)),
-        statut: 'en cours',
+        statut: 'en_cours',
         description: 'Coupure de courant depuis 3 heures',
         technicienId: 2,
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -191,6 +191,28 @@ class _AdminDashboardState extends State<AdminDashboard>
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         updatedAt: DateTime.now().subtract(const Duration(days: 2)),
       ),
+      Demande(
+        id: 5,
+        clientId: 5,
+        type: 'reclamation',
+        dateSoumission: DateTime.now().subtract(const Duration(days: 3)),
+        statut: 'bloque',
+        description: 'Problème de compteur électrique',
+        technicienId: 1,
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
+        updatedAt: DateTime.now().subtract(const Duration(days: 3)),
+      ),
+      Demande(
+        id: 6,
+        clientId: 6,
+        type: 'reclamation',
+        dateSoumission: DateTime.now().subtract(const Duration(days: 5)),
+        statut: 'ferme',
+        description: 'Demande de changement de puissance résolue',
+        technicienId: 2,
+        createdAt: DateTime.now().subtract(const Duration(days: 5)),
+        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
+      ),
     ];
 
     _updateStats();
@@ -200,9 +222,9 @@ class _AdminDashboardState extends State<AdminDashboard>
     final allDemandes = [..._demandes, ..._reclamations];
     _stats = {
       'nouvelles': allDemandes.where((d) => d.statut == 'ouvert').length,
-      'en_cours': allDemandes.where((d) => d.statut == 'en cours').length,
+      'en_cours': allDemandes.where((d) => d.statut == 'en_cours').length,
       'assignees': allDemandes.where((d) => d.technicienId != null).length,
-      'resolues': allDemandes.where((d) => d.statut == 'validé').length,
+      'resolues': allDemandes.where((d) => d.statut == 'ferme').length,
     };
   }
 
@@ -256,6 +278,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       }
 
       String? selectedTechnicienId;
+      String? selectedStatus;
 
       showDialog(
         context: context,
@@ -293,6 +316,59 @@ class _AdminDashboardState extends State<AdminDashboard>
                       },
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Statut après assignation',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: selectedStatus,
+                      items: [
+                        DropdownMenuItem(
+                          value: 'en_cours',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.play_arrow,
+                                color: Colors.orange,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('En cours'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'bloque',
+                          child: Row(
+                            children: [
+                              Icon(Icons.block, color: Colors.red, size: 16),
+                              const SizedBox(width: 8),
+                              const Text('Bloqué'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ferme',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.done_all,
+                                color: Colors.green,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Fermé'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        selectedStatus = value;
+                      },
+                    ),
+                  ),
                 ],
               ),
               actions: [
@@ -303,7 +379,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 ElevatedButton(
                   onPressed: () {
                     print(
-                      'Bouton Assigner - selectedTechnicienId: $selectedTechnicienId',
+                      'Bouton Assigner - selectedTechnicienId: $selectedTechnicienId, selectedStatus: $selectedStatus',
                     );
                     if (selectedTechnicienId == null) {
                       print('Aucun technicien sélectionné');
@@ -316,31 +392,65 @@ class _AdminDashboardState extends State<AdminDashboard>
                       return;
                     }
 
+                    if (selectedStatus == null) {
+                      print('Aucun statut sélectionné');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Veuillez sélectionner un statut'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      return;
+                    }
+
                     () async {
                       print('Bouton Assigner cliqué');
                       print('Demande ID: ${demande.id}');
                       print('Technicien ID sélectionné: $selectedTechnicienId');
+                      print('Statut sélectionné: $selectedStatus');
 
                       try {
-                        final result = await ApiService.assignTechnicien(
+                        // Assigner le technicien
+                        final assignResult = await ApiService.assignTechnicien(
                           demande.id.toString(),
                           selectedTechnicienId!,
+                          type: demande.type, // Passer le type de demande
                         );
 
-                        print('Résultat assignation: $result');
+                        print('Résultat assignation: $assignResult');
 
-                        if (result['success']) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(result['message']),
-                              backgroundColor: Colors.green,
-                            ),
+                        if (assignResult['success']) {
+                          // Mettre à jour le statut
+                          final statusResult = await ApiService.updateStatus(
+                            demande.id.toString(),
+                            selectedStatus!,
+                            type: demande.type, // Passer le type de demande
                           );
-                          _loadData(); // Recharger les données
+
+                          print('Résultat mise à jour statut: $statusResult');
+
+                          if (statusResult['success']) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Technicien assigné et statut mis à jour avec succès',
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            _loadData(); // Recharger les données
+                          } else {
+                            print(
+                              'Erreur dans la mise à jour du statut: ${statusResult['message']}',
+                            );
+                            throw Exception(statusResult['message']);
+                          }
                         } else {
-                          print('Erreur dans la réponse: ${result['message']}');
-                          throw Exception(result['message']);
+                          print(
+                            'Erreur dans l\'assignation: ${assignResult['message']}',
+                          );
+                          throw Exception(assignResult['message']);
                         }
                       } catch (e) {
                         print('Erreur lors de l\'assignation: $e');
@@ -389,15 +499,52 @@ class _AdminDashboardState extends State<AdminDashboard>
                     border: OutlineInputBorder(),
                   ),
                   value: selectedStatus,
-                  items:
-                      ['ouvert', 'en_cours', 'resolu', 'annule']
-                          .map(
-                            (status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(_getStatusDisplay(status)),
-                            ),
-                          )
-                          .toList(),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'ouvert',
+                      child: Row(
+                        children: [
+                          Icon(Icons.folder_open, color: Colors.blue, size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Ouvert'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'en_cours',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.play_arrow,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('En cours'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'bloque',
+                      child: Row(
+                        children: [
+                          Icon(Icons.block, color: Colors.red, size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Bloqué'),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'ferme',
+                      child: Row(
+                        children: [
+                          Icon(Icons.done_all, color: Colors.green, size: 16),
+                          const SizedBox(width: 8),
+                          const Text('Fermé'),
+                        ],
+                      ),
+                    ),
+                  ],
                   onChanged: (value) {
                     selectedStatus = value;
                   },
@@ -418,6 +565,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                             final result = await ApiService.updateStatus(
                               demande.id.toString(),
                               selectedStatus!,
+                              type: demande.type, // Passer le type de demande
                             );
 
                             if (result['success']) {
@@ -488,6 +636,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                             final result = await ApiService.addComment(
                               demande.id.toString(),
                               commentController.text.trim(),
+                              type: demande.type, // Passer le type de demande
                             );
 
                             if (result['success']) {
@@ -785,12 +934,12 @@ class _AdminDashboardState extends State<AdminDashboard>
     switch (status) {
       case 'ouvert':
         return Colors.blue;
-      case 'validé':
-        return Colors.green;
-      case 'en cours':
+      case 'en_cours':
         return Colors.orange;
-      case 'rejeté':
+      case 'bloque':
         return Colors.red;
+      case 'ferme':
+        return Colors.green;
       default:
         return Colors.grey;
     }

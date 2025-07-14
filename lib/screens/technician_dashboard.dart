@@ -19,6 +19,14 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
   bool _isLoading = true;
   bool _isApiConnected = true;
 
+  // Statuts valides pour les techniciens
+  static const List<String> statutsValides = [
+    'ouvert',
+    'en_cours',
+    'bloque',
+    'ferme',
+  ];
+
   // Données des tâches assignées
   List<Demande> _assignedTasks = [];
   String _technicianName = 'Technicien';
@@ -57,34 +65,38 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
 
       if (demandesResult['success'] == true) {
         final demandesData = demandesResult['data'] as List;
-        _assignedTasks = demandesData
-            .where((item) => item['technicien_id'] != null) // Filtrer les tâches assignées
-            .map((item) {
-              try {
-                return Demande.fromJson(item);
-              } catch (e) {
-                print('Erreur conversion demande: $e');
-                print('Données: $item');
-                // Retourner une demande par défaut en cas d'erreur
-                return Demande(
-                  id: item['id'] ?? 0,
-                  clientId: item['client_id'] ?? 0,
-                  type: item['type'] ?? 'abonnement',
-                  dateSoumission:
-                      DateTime.tryParse(item['dateSoumission'] ?? '') ??
-                      DateTime.now(),
-                  statut: item['statut'] ?? 'ouvert',
-                  description: item['description'] ?? '',
-                  technicienId: item['technicien_id'],
-                  createdAt:
-                      DateTime.tryParse(item['created_at'] ?? '') ??
-                      DateTime.now(),
-                  updatedAt:
-                      DateTime.tryParse(item['updated_at'] ?? '') ??
-                      DateTime.now(),
-                );
-              }
-            }).toList();
+        _assignedTasks =
+            demandesData
+                .where(
+                  (item) => item['technicien_id'] != null,
+                ) // Filtrer les tâches assignées
+                .map((item) {
+                  try {
+                    return Demande.fromJson(item);
+                  } catch (e) {
+                    print('Erreur conversion demande: $e');
+                    print('Données: $item');
+                    // Retourner une demande par défaut en cas d'erreur
+                    return Demande(
+                      id: item['id'] ?? 0,
+                      clientId: item['client_id'] ?? 0,
+                      type: item['type'] ?? 'abonnement',
+                      dateSoumission:
+                          DateTime.tryParse(item['dateSoumission'] ?? '') ??
+                          DateTime.now(),
+                      statut: item['statut'] ?? 'ouvert',
+                      description: item['description'] ?? '',
+                      technicienId: item['technicien_id'],
+                      createdAt:
+                          DateTime.tryParse(item['created_at'] ?? '') ??
+                          DateTime.now(),
+                      updatedAt:
+                          DateTime.tryParse(item['updated_at'] ?? '') ??
+                          DateTime.now(),
+                    );
+                  }
+                })
+                .toList();
       }
 
       // Charger les réclamations assignées
@@ -93,35 +105,39 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
 
       if (reclamationsResult['success'] == true) {
         final reclamationsData = reclamationsResult['data'] as List;
-        final reclamationsAssignees = reclamationsData
-            .where((item) => item['technicien_id'] != null) // Filtrer les réclamations assignées
-            .map((item) {
-              try {
-                return Demande.fromJson(item);
-              } catch (e) {
-                print('Erreur conversion réclamation: $e');
-                print('Données: $item');
-                // Retourner une demande par défaut en cas d'erreur
-                return Demande(
-                  id: item['id'] ?? 0,
-                  clientId: item['client_id'] ?? 0,
-                  type: 'reclamation',
-                  dateSoumission:
-                      DateTime.tryParse(item['dateSoumission'] ?? '') ??
-                      DateTime.now(),
-                  statut: item['statut'] ?? 'ouvert',
-                  description: item['description'] ?? '',
-                  technicienId: item['technicien_id'],
-                  createdAt:
-                      DateTime.tryParse(item['created_at'] ?? '') ??
-                      DateTime.now(),
-                  updatedAt:
-                      DateTime.tryParse(item['updated_at'] ?? '') ??
-                      DateTime.now(),
-                );
-              }
-            }).toList();
-        
+        final reclamationsAssignees =
+            reclamationsData
+                .where(
+                  (item) => item['technicien_id'] != null,
+                ) // Filtrer les réclamations assignées
+                .map((item) {
+                  try {
+                    return Demande.fromJson(item);
+                  } catch (e) {
+                    print('Erreur conversion réclamation: $e');
+                    print('Données: $item');
+                    // Retourner une demande par défaut en cas d'erreur
+                    return Demande(
+                      id: item['id'] ?? 0,
+                      clientId: item['client_id'] ?? 0,
+                      type: 'reclamation',
+                      dateSoumission:
+                          DateTime.tryParse(item['dateSoumission'] ?? '') ??
+                          DateTime.now(),
+                      statut: item['statut'] ?? 'ouvert',
+                      description: item['description'] ?? '',
+                      technicienId: item['technicien_id'],
+                      createdAt:
+                          DateTime.tryParse(item['created_at'] ?? '') ??
+                          DateTime.now(),
+                      updatedAt:
+                          DateTime.tryParse(item['updated_at'] ?? '') ??
+                          DateTime.now(),
+                    );
+                  }
+                })
+                .toList();
+
         // Ajouter les réclamations assignées à la liste des tâches
         _assignedTasks.addAll(reclamationsAssignees);
       }
@@ -149,7 +165,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
         clientId: 1,
         type: 'abonnement',
         dateSoumission: DateTime.now().subtract(const Duration(hours: 2)),
-        statut: 'validé',
+        statut: 'ferme',
         description: 'Installation complète pour nouvelle construction',
         technicienId: 1,
         createdAt: DateTime.now().subtract(const Duration(hours: 2)),
@@ -160,7 +176,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
         clientId: 2,
         type: 'reclamation',
         dateSoumission: DateTime.now().subtract(const Duration(hours: 1)),
-        statut: 'en cours',
+        statut: 'en_cours',
         description: 'Coupure de courant depuis 3 heures',
         technicienId: 1,
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -171,7 +187,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
         clientId: 3,
         type: 'abonnement',
         dateSoumission: DateTime.now().subtract(const Duration(days: 1)),
-        statut: 'validé',
+        statut: 'ferme',
         description: 'Demande d\'extension pour commerce',
         technicienId: 1,
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
@@ -193,7 +209,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
         clientId: 5,
         type: 'abonnement',
         dateSoumission: DateTime.now().subtract(const Duration(hours: 3)),
-        statut: 'en cours',
+        statut: 'bloque',
         description: 'Nouvel abonnement pour résidence',
         technicienId: 1,
         createdAt: DateTime.now().subtract(const Duration(hours: 3)),
@@ -207,8 +223,8 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
   void _updateStats() {
     _stats = {
       'assignees': _assignedTasks.where((t) => t.technicienId != null).length,
-      'en_cours': _assignedTasks.where((t) => t.statut == 'en cours').length,
-      'resolues': _assignedTasks.where((t) => t.statut == 'validé').length,
+      'en_cours': _assignedTasks.where((t) => t.statut == 'en_cours').length,
+      'resolues': _assignedTasks.where((t) => t.statut == 'ferme').length,
     };
   }
 
@@ -222,19 +238,24 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
+                  title: const Text('Ouvert'),
+                  leading: const Icon(Icons.folder_open, color: Colors.blue),
+                  onTap: () => Navigator.of(context).pop('ouvert'),
+                ),
+                ListTile(
                   title: const Text('En cours'),
                   leading: const Icon(Icons.play_arrow, color: Colors.orange),
-                  onTap: () => Navigator.of(context).pop('en cours'),
+                  onTap: () => Navigator.of(context).pop('en_cours'),
                 ),
                 ListTile(
-                  title: const Text('Validé'),
-                  leading: const Icon(Icons.check_circle, color: Colors.green),
-                  onTap: () => Navigator.of(context).pop('validé'),
+                  title: const Text('Bloqué'),
+                  leading: const Icon(Icons.block, color: Colors.red),
+                  onTap: () => Navigator.of(context).pop('bloque'),
                 ),
                 ListTile(
-                  title: const Text('Rejeté'),
-                  leading: const Icon(Icons.cancel, color: Colors.red),
-                  onTap: () => Navigator.of(context).pop('rejeté'),
+                  title: const Text('Fermé'),
+                  leading: const Icon(Icons.done_all, color: Colors.green),
+                  onTap: () => Navigator.of(context).pop('ferme'),
                 ),
               ],
             ),
@@ -249,6 +270,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
         final result = await ApiService.updateStatus(
           task.id.toString(),
           newStatus,
+          type: task.type, // Passer le type de demande
         );
 
         print('Résultat mise à jour statut: $result');
@@ -316,6 +338,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                       final result = await ApiService.addComment(
                         task.id.toString(),
                         commentController.text.trim(),
+                        type: task.type, // Passer le type de demande
                       );
 
                       print('Résultat ajout commentaire: $result');
@@ -456,12 +479,12 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color:
-            task.statut == 'en cours'
+            task.statut == 'en_cours'
                 ? Colors.orange.withOpacity(0.1)
                 : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: task.statut == 'en cours' ? Colors.orange : Colors.grey,
+          color: task.statut == 'en_cours' ? Colors.orange : Colors.grey,
         ),
       ),
       child: Column(
@@ -527,12 +550,12 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
     switch (status) {
       case 'ouvert':
         return Colors.blue;
-      case 'validé':
-        return Colors.green;
-      case 'en cours':
+      case 'en_cours':
         return Colors.orange;
-      case 'rejeté':
+      case 'bloque':
         return Colors.red;
+      case 'ferme':
+        return Colors.green;
       default:
         return Colors.grey;
     }
@@ -629,7 +652,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                               ),
                             ),
                           ),
-                          if (task.statut == 'en cours')
+                          if (task.statut == 'en_cours')
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 4,
@@ -679,7 +702,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                 SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    'Ajouter rapport',
+                                    'Ajouter commentaire',
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -835,7 +858,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                       if (_assignedTasks
                                           .where(
                                             (t) =>
-                                                t.statut == 'en cours' &&
+                                                t.statut == 'en_cours' &&
                                                 t.type == 'abonnement',
                                           )
                                           .isNotEmpty) ...[
@@ -861,7 +884,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                         ..._assignedTasks
                                             .where(
                                               (t) =>
-                                                  t.statut == 'en cours' &&
+                                                  t.statut == 'en_cours' &&
                                                   t.type == 'abonnement',
                                             )
                                             .take(2)
@@ -874,7 +897,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                       if (_assignedTasks
                                           .where(
                                             (t) =>
-                                                t.statut == 'en cours' &&
+                                                t.statut == 'en_cours' &&
                                                 t.type == 'reclamation',
                                           )
                                           .isNotEmpty) ...[
@@ -900,7 +923,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                         ..._assignedTasks
                                             .where(
                                               (t) =>
-                                                  t.statut == 'en cours' &&
+                                                  t.statut == 'en_cours' &&
                                                   t.type == 'reclamation',
                                             )
                                             .take(2)
@@ -909,7 +932,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard>
                                             ),
                                       ],
                                       if (_assignedTasks
-                                          .where((t) => t.statut == 'en cours')
+                                          .where((t) => t.statut == 'en_cours')
                                           .isEmpty)
                                         const Text('Aucune tâche en cours'),
                                     ],

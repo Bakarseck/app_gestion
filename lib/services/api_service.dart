@@ -255,10 +255,11 @@ class ApiService {
   // === ACTIONS ADMIN ===
   static Future<Map<String, dynamic>> assignTechnicien(
     String demandeId,
-    String technicienId,
-  ) async {
+    String technicienId, {
+    String? type, // 'abonnement' ou 'reclamation'
+  }) async {
     print(
-      'Tentative d\'assignation du technicien $technicienId à la demande $demandeId',
+      'Tentative d\'assignation du technicien $technicienId à la demande $demandeId (type: $type)',
     );
 
     // Récupérer les données utilisateur pour mapper le rôle
@@ -276,19 +277,26 @@ class ApiService {
       print('Token (premiers caractères): ${token.substring(0, 20)}...');
     }
 
-    final result = await put('demandes/$demandeId/assign', {
-      'technicien_id': technicienId,
-    });
+    // Déterminer le bon endpoint selon le type
+    String endpoint;
+    if (type == 'reclamation') {
+      endpoint = 'claims/$demandeId/assign';
+    } else {
+      endpoint = 'demandes/$demandeId/assign';
+    }
+
+    final result = await put(endpoint, {'technicien_id': technicienId});
     print('Résultat assignTechnicien: $result');
     return result;
   }
 
   static Future<Map<String, dynamic>> updateStatus(
     String demandeId,
-    String status,
-  ) async {
+    String status, {
+    String? type, // 'abonnement' ou 'reclamation'
+  }) async {
     print(
-      'Tentative de mise à jour du statut $status pour la demande $demandeId',
+      'Tentative de mise à jour du statut $status pour la demande $demandeId (type: $type)',
     );
 
     // Récupérer les données utilisateur pour mapper le rôle
@@ -298,16 +306,27 @@ class ApiService {
 
     print('Rôle utilisateur: $userRole, Rôle mappé: $mappedRole');
 
-    final result = await put('demandes/$demandeId/status', {'statut': status});
+    // Déterminer le bon endpoint selon le type
+    String endpoint;
+    if (type == 'reclamation') {
+      endpoint = 'claims/$demandeId';
+    } else {
+      endpoint = 'demandes/$demandeId';
+    }
+
+    final result = await put(endpoint, {'statut': status});
     print('Résultat updateStatus: $result');
     return result;
   }
 
-  static Future<Map<String, dynamic>> addComment(
-    String demandeId,
-    String comment,
+  // Nouvelle méthode pour mettre à jour le statut d'une réclamation spécifiquement
+  static Future<Map<String, dynamic>> updateClaimStatus(
+    String claimId,
+    String status,
   ) async {
-    print('Tentative d\'ajout de commentaire pour la demande $demandeId');
+    print(
+      'Tentative de mise à jour du statut $status pour la réclamation $claimId',
+    );
 
     // Récupérer les données utilisateur pour mapper le rôle
     final userData = await AuthService.getUserData();
@@ -316,9 +335,36 @@ class ApiService {
 
     print('Rôle utilisateur: $userRole, Rôle mappé: $mappedRole');
 
-    final result = await put('demandes/$demandeId/comment', {
-      'commentaire': comment,
-    });
+    final result = await put('claims/$claimId', {'statut': status});
+    print('Résultat updateClaimStatus: $result');
+    return result;
+  }
+
+  static Future<Map<String, dynamic>> addComment(
+    String demandeId,
+    String comment, {
+    String? type, // 'abonnement' ou 'reclamation'
+  }) async {
+    print(
+      'Tentative d\'ajout de commentaire pour la demande $demandeId (type: $type)',
+    );
+
+    // Récupérer les données utilisateur pour mapper le rôle
+    final userData = await AuthService.getUserData();
+    final userRole = userData?['typeUtilisateur'] ?? 'technicien';
+    final mappedRole = _mapRoleForBackend(userRole);
+
+    print('Rôle utilisateur: $userRole, Rôle mappé: $mappedRole');
+
+    // Déterminer le bon endpoint selon le type
+    String endpoint;
+    if (type == 'reclamation') {
+      endpoint = 'claims/$demandeId/comment';
+    } else {
+      endpoint = 'demandes/$demandeId/comment';
+    }
+
+    final result = await put(endpoint, {'commentaire': comment});
     print('Résultat addComment: $result');
     return result;
   }
